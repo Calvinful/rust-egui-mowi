@@ -1,0 +1,124 @@
+----properties-----
+[package]
+name = "mow"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eframe = { version = "0.29.1", features = ["persistence"] }
+egui = "0.29.1"
+serde = { version = "1.0.216", features = ["derive"] }
+serde_json = "1.0.133"
+
+----------project files-----------
+
+src//ui.rs
+--------------------------------
+\n
+--------------------------------
+src//menu/ui.rs
+--------------------------------
+\n
+--------------------------------
+src//menu/menu_bar.rs
+--------------------------------
+use super::MainMenu;
+use crate::View;
+
+#[derive(Serialize, Deserialize)]
+ pub struct Item {
+    name: String,
+    page_link: String
+}
+
+#[derive(Default)]
+pub struct MainMenu {
+    items: Vec<menuItem>
+}
+
+
+
+\n
+--------------------------------
+src//menu/mod.rs
+--------------------------------
+pub mod ui;
+pub mod menu_bar;
+
+
+
+
+
+
+
+\n
+--------------------------------
+src//main.rs
+--------------------------------
+use serde_json;
+use eframe::{egui, App, Storage};
+mod menu;
+mod menu{(menu_bar::MainMenu)};
+use crate::menu::*;
+#[derive(Default, serde::Serialize, serde::Deserialize)]
+struct MowApp {
+//counter: i32,
+//main_menu: Vec<Item>
+}
+
+#[derive(Default, serde::Serialize, serde::Deserialize)]
+struct GlobalState{
+    counter: i32,
+    main_menu: MainMenu<item: menu::menu_item::Item>,
+}
+
+impl App for MowApp {
+    fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.label(format!("Counter: {}", self.counter));
+            if ui.button("Increment").clicked() {
+                self.counter += 1;
+            }
+        });
+    }
+
+fn save(&mut self, storage: &mut dyn Storage) {
+        if let Ok(state) = serde_json::to_string(self) {
+            storage.set_string("app_state", state);
+        }
+    }
+
+}
+
+impl MowApp {
+    fn load(storage: Option<&dyn Storage>) -> Self {
+        if let Some(storage) = storage {
+            if let Some(state) = storage.get_string("app_state") {
+                if let Ok(app) = serde_json::from_str::<Self>(&state) {
+                    return app;
+                }
+            }
+        }
+        Self::default()
+    }
+}
+
+
+
+fn main() {
+    let options = eframe::NativeOptions::default();
+    if let Err(e) = 
+        eframe::run_native(
+             "MowApp",
+            options,
+            Box::new(|cc| {
+                 Ok(Box::new(MowApp::load(cc.storage)))
+             }),
+        ){
+            eprintln!("Failed to run the application: {}", e);
+            std::process::exit(1);
+        };
+}
+\n
+
+
