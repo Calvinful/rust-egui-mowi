@@ -16,25 +16,142 @@ src//ui.rs
 --------------------------------
 \n
 --------------------------------
+src//program_table/mod.rs
+--------------------------------
+pub mod program;
+pub mod program_table;
+\n
+--------------------------------
+src//program_table/program_table.rs
+--------------------------------
+use crate::View;
+use egui::{TextStyle, TextWrapMode};
+use super::program::Program;
+use egui;
+
+
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct ProgramTable{
+    program_list: Vec<Program>
+}
+impl View for ProgramTable { 
+   fn ui(&mut self, ui: &mut egui::Ui){
+        
+   }
+}
+
+
+impl Default for ProgramTable{
+    fn default() -> Self {
+        Self{
+            program_list: Vec::new()
+        }
+    }
+
+}
+\n
+--------------------------------
+src//program_table/program.rs
+--------------------------------
+
+
+
+#[derive( serde::Serialize, serde::Deserialize)]
+pub struct Program{
+    name: String,
+    localPort: i32,
+    hostPort: i32,
+    hostIp: String
+}
+\n
+--------------------------------
 src//menu/ui.rs
 --------------------------------
 \n
 --------------------------------
 src//menu/menu_bar.rs
 --------------------------------
-use super::MainMenu;
 use crate::View;
-
-#[derive(Serialize, Deserialize)]
- pub struct Item {
+use egui;
+#[derive( serde::Serialize, serde::Deserialize)]
+pub struct Item {
     name: String,
     page_link: String
 }
 
-#[derive(Default)]
+#[derive( serde::Serialize, serde::Deserialize)]
 pub struct MainMenu {
-    items: Vec<menuItem>
+    items: Vec<Item>
 }
+
+impl View for MainMenu {
+    fn ui(&mut self, ui: &mut egui::Ui) {
+        ui.menu_button("File", |ui| {
+            MainMenu::nested_menus(ui);
+        });
+
+        ui.menu_button("Edit", |ui| {
+            if ui.button("Cut").clicked() {
+                ui.close_menu();
+            }
+            if ui.button("Copy").clicked() {
+                ui.close_menu();
+            }
+            if ui.button("Paste").clicked() {
+                ui.close_menu();
+            }
+        });
+
+        ui.menu_button("Help", |ui| {
+            if ui.button("About").clicked() {
+                ui.close_menu();
+            }
+        });
+    }
+}
+
+impl MainMenu {
+    pub(super) fn nested_menus(ui: &mut egui::Ui) {
+        ui.set_max_width(200.0);
+        if ui.button("Open…").clicked() {
+            ui.close_menu();
+        }
+
+        ui.menu_button("Recent Files", |ui| {
+            ui.menu_button("Project 1", |ui| {
+                if ui.button("Open").clicked() {
+                    ui.close_menu();
+                }
+                ui.button("Remove from list");
+            });
+
+            ui.menu_button("Project 2", |ui| {
+                if ui.button("Open").clicked() {
+                    ui.close_menu();
+                }
+                ui.button("Remove from list");
+            });
+
+            ui.button("Clear Recent");
+            if ui.button("Browse...").clicked() {
+                ui.close_menu();
+            }
+        });
+
+        if ui.button("Save").clicked() {
+            ui.close_menu();
+        }
+        if ui.button("Save As...").clicked() {
+            ui.close_menu();
+        }
+        ui.separator();
+        if ui.button("Exit").clicked() {
+            ui.close_menu();
+        }
+    }
+}
+
+
 
 
 
@@ -58,26 +175,37 @@ src//main.rs
 use serde_json;
 use eframe::{egui, App, Storage};
 mod menu;
-mod menu{(menu_bar::MainMenu)};
-use crate::menu::*;
+mod program_table;
+
+
+use program_table::program::Program;
+//use menu::menu_bar::{MainMenu, Item};  // Import both MainMenu and Item
+
 #[derive(Default, serde::Serialize, serde::Deserialize)]
 struct MowApp {
-//counter: i32,
-//main_menu: Vec<Item>
+    global_state: GlobalState
 }
 
 #[derive(Default, serde::Serialize, serde::Deserialize)]
 struct GlobalState{
     counter: i32,
-    main_menu: MainMenu<item: menu::menu_item::Item>,
+    programs: Vec<Program>
 }
+
+
+pub trait View {
+    fn ui(&mut self, ui: &mut egui::Ui);
+}
+
+
 
 impl App for MowApp {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.label(format!("Counter: {}", self.counter));
+
+            ui.label(format!("Counter: {}", &mut self.global_state.counter));
             if ui.button("Increment").clicked() {
-                self.counter += 1;
+                self.global_state.counter += 1;
             }
         });
     }
@@ -120,5 +248,15 @@ fn main() {
         };
 }
 \n
-
+--------------------------------
+THE PROJECT IS FORMATTED LIKE SO:
+.
+├──src
+│  ├──main.rs
+│  └───menu
+│      ├──mod.rs
+│      ├──utils.rs
+│      └──ui.rs
+├──Cargo.toml
+└──...
 
